@@ -7,6 +7,7 @@ A simulated embedded firmware application built with CMake. Demonstrates realist
 ```bash
 make          # Debug build
 make release  # Release build
+# Nonsense comment for a test commit
 ```
 
 ## Testing
