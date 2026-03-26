@@ -1,4 +1,4 @@
-# Demo Firmware Project - TEST2
+# Demo Firmware Project - TEST3
 
 A simulated embedded firmware application built with CMake. Demonstrates realistic firmware patterns with hardware abstraction layers, device drivers, and continuous sensor monitoring.
 
