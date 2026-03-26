@@ -77,6 +77,7 @@ spec:
                             echo 'TODO: Run Black Duck SCA scan'
                             script {
                                 env.MY_VAR = "Hello from CI"
+                                env.BUILD_NUMBER = env.BUILD_NUMBER
                             }
                         }
                     }
