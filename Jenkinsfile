@@ -118,7 +118,7 @@ spec:
                             url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz",
                             digest: digest
                         )
-                        env.ARTIFACT_ID = sh(script: "echo \"${buildArtifact}\" | awk -F\"'\" '{print \$2}'", returnStdout: true).trim()
+                        env.ARTIFACT_ID = buildArtifactId
                         echo "Build artifact registered with CloudBees Unify"
                         echo "Artifact ID: ${env.ARTIFACT_ID}"
                     }
