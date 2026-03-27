@@ -110,7 +110,7 @@ spec:
                     script {
                         def digest = sh(script: "sha256sum demo-firmware-${env.VERSION}.tar.gz | awk '{print \$1}'", returnStdout: true).trim()
 
-                        registerBuildArtifactMetadata(
+                        def buildArtifact = registerBuildArtifactMetadata(
                             name: env.JOB_NAME,
                             version: env.VERSION,
                             type: 'Binary',
@@ -118,6 +118,9 @@ spec:
                             url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz",
                             digest: digest
                         )
+                        env.ARTIFACT_ID = buildArtifact.artifactId
+                        echo "Build artifact registered with CloudBees Unify"
+                        echo "Artifact ID: ${env.ARTIFACT_ID}"
                     }
 
                     // TODO: Add CloudBees Platform evidence publishing
