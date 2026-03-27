@@ -110,7 +110,7 @@ spec:
                     script {
                         def digest = sh(script: "sha256sum demo-firmware-${env.VERSION}.tar.gz | awk '{print \$1}'", returnStdout: true).trim()
 
-                        def buildArtifact = registerBuildArtifactMetadata(
+                        def buildArtifactId = registerBuildArtifactMetadata(
                             name: env.JOB_NAME,
                             version: env.VERSION,
                             type: 'Binary',
