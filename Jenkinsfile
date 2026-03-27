@@ -134,47 +134,52 @@ spec:
                 branch 'main'
             }
             steps {
-                script {
-                    sshagent(credentials: ['ec2key']) {
-                        sh """
-                            # Stop any running firmware instance
-                            ssh -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
-                                if pgrep -f demo-firmware > /dev/null; then
-                                    echo "Stopping existing firmware instance..."
-                                    pkill -SIGTERM -f demo-firmware || true
+                container('build') {
+                    script {
+                        withCredentials([sshUserPrivateKey(credentialsId: 'ec2key', keyFileVariable: 'SSH_KEY')]) {
+                            sh """
+                                # Ensure ssh is available
+                                apt-get update && apt-get install -y openssh-client
+
+                                # Stop any running firmware instance
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+                                    if pgrep -f demo-firmware > /dev/null; then
+                                        echo "Stopping existing firmware instance..."
+                                        pkill -SIGTERM -f demo-firmware || true
+                                        sleep 2
+                                    fi
+                                '
+
+                                # Copy artifact to EC2
+                                scp -i \${SSH_KEY} -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com:/tmp/
+
+                                # Extract and deploy
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+                                    mkdir -p ~/demo-firmware
+                                    cd ~/demo-firmware
+                                    tar -xzf /tmp/demo-firmware-${env.VERSION}.tar.gz
+                                    chmod +x demo-firmware
+
+                                    # Start firmware in background
+                                    nohup ./demo-firmware > firmware.log 2>&1 &
+                                    echo \$! > firmware.pid
+
+                                    echo "Firmware deployed and started (PID: \$(cat firmware.pid))"
+                                    echo "Version: ${env.VERSION}"
+
+                                    # Wait a moment and check if it started successfully
                                     sleep 2
-                                fi
-                            '
-
-                            # Copy artifact to EC2
-                            scp -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com:/tmp/
-
-                            # Extract and deploy
-                            ssh -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
-                                mkdir -p ~/demo-firmware
-                                cd ~/demo-firmware
-                                tar -xzf /tmp/demo-firmware-${env.VERSION}.tar.gz
-                                chmod +x demo-firmware
-
-                                # Start firmware in background
-                                nohup ./demo-firmware > firmware.log 2>&1 &
-                                echo \$! > firmware.pid
-
-                                echo "Firmware deployed and started (PID: \$(cat firmware.pid))"
-                                echo "Version: ${env.VERSION}"
-
-                                # Wait a moment and check if it started successfully
-                                sleep 2
-                                if pgrep -f demo-firmware > /dev/null; then
-                                    echo "Firmware is running successfully"
-                                    tail -n 20 firmware.log
-                                else
-                                    echo "ERROR: Firmware failed to start"
-                                    tail -n 50 firmware.log
-                                    exit 1
-                                fi
-                            '
-                        """
+                                    if pgrep -f demo-firmware > /dev/null; then
+                                        echo "Firmware is running successfully"
+                                        tail -n 20 firmware.log
+                                    else
+                                        echo "ERROR: Firmware failed to start"
+                                        tail -n 50 firmware.log
+                                        exit 1
+                                    fi
+                                '
+                            """
+                        }
                     }
                 }
             }
