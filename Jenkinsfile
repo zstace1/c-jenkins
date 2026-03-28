@@ -40,7 +40,7 @@ spec:
                     sh '''
                         apt-get update && apt-get install -y build-essential cmake cppcheck clang-format git coreutils python3-pyparsing python3-junit.xml awscli
 
-                        # Install the AWS SSM Session Manager Plugin
+                        # Install the AWS SSM Session Manager Plugin - test
                         curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
                         dpkg -i session-manager-plugin.deb
                     '''
