@@ -37,7 +37,13 @@ spec:
         stage('Setup Tools') {
             steps {
                 container('build') {
-                    sh 'apt-get update && apt-get install -y build-essential cmake cppcheck clang-format git coreutils python3-pyparsing python3-junit.xml'
+                    sh '''
+                        apt-get update && apt-get install -y build-essential cmake cppcheck clang-format git coreutils python3-pyparsing python3-junit.xml awscli
+
+                        # Install the AWS SSM Session Manager Plugin
+                        curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
+                        dpkg -i session-manager-plugin.deb
+                    '''
                 }
             }
         }
@@ -129,20 +135,91 @@ spec:
             }
         }
 
-        stage('Deploy to EC2') {
+//        stage('Deploy to EC2') {
+//            when {
+//                branch 'main'
+//            }
+//            steps {
+//                container('build') {
+//                    script {
+//                        withCredentials([sshUserPrivateKey(credentialsId: 'ec2key', keyFileVariable: 'SSH_KEY')]) {
+//                            sh """
+//                                # Ensure ssh is available
+//                                apt-get update && apt-get install -y openssh-client
+//
+//                                # Stop any running firmware instance
+//                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+//                                    if pgrep -f demo-firmware > /dev/null; then
+//                                        echo "Stopping existing firmware instance..."
+//                                        pkill -SIGTERM -f demo-firmware || true
+//                                        sleep 2
+//                                    fi
+//                                '
+//
+//                                # Copy artifact to EC2
+//                                scp -i \${SSH_KEY} -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com:/tmp/
+//
+//                                # Extract and deploy
+//                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+//                                    mkdir -p ~/demo-firmware
+//                                    cd ~/demo-firmware
+//                                    tar -xzf /tmp/demo-firmware-${env.VERSION}.tar.gz
+//                                    chmod +x demo-firmware
+//
+//                                    # Start firmware in background
+//                                    nohup ./demo-firmware > firmware.log 2>&1 &
+//                                    echo \$! > firmware.pid
+//
+//                                    echo "Firmware deployed and started (PID: \$(cat firmware.pid))"
+//                                    echo "Version: ${env.VERSION}"
+//
+//                                    # Wait a moment and check if it started successfully
+//                                    sleep 2
+//                                    if pgrep -f demo-firmware > /dev/null; then
+//                                        echo "Firmware is running successfully"
+//                                        tail -n 20 firmware.log
+//                                    else
+//                                        echo "ERROR: Firmware failed to start"
+//                                        tail -n 50 firmware.log
+//                                        exit 1
+//                                    fi
+//                                '
+//                            """
+//                        }
+//                    }
+//                }
+//            }
+//        }
+stage('Deploy to EC2 via SSM') {
             when {
                 branch 'main'
             }
             steps {
                 container('build') {
                     script {
-                        withCredentials([sshUserPrivateKey(credentialsId: 'ec2key', keyFileVariable: 'SSH_KEY')]) {
+                        // IMPORTANT: You must inject AWS credentials here so Jenkins can call the SSM API!
+                        // You can use a Jenkins credentials binding (like below) or environment variables.
+                        withCredentials([
+                            sshUserPrivateKey(credentialsId: 'ec2key', keyFileVariable: 'SSH_KEY'),
+                            // Uncomment and configure this if you have AWS keys stored in Jenkins:
+                            // usernamePassword(credentialsId: 'aws-creds', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')
+                        ]) {
+                            
+                            // Define your target instance ID
+                            env.EC2_INSTANCE_ID = "i-08c8a16ee23becca4"
+                            
                             sh """
-                                # Ensure ssh is available
+                                # 1. Ensure SSH is available
                                 apt-get update && apt-get install -y openssh-client
 
-                                # Stop any running firmware instance
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+                                # 2. Configure SSH to tunnel through AWS SSM automatically for any EC2 Instance ID
+                                mkdir -p ~/.ssh
+                                echo "host i-* mi-*" > ~/.ssh/config
+                                echo "    ProxyCommand sh -c \\"aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p'\\"" >> ~/.ssh/config
+                                chmod 600 ~/.ssh/config
+
+                                # 3. Stop any running firmware instance (Notice we use EC2_INSTANCE_ID now!)
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@\${EC2_INSTANCE_ID} '
                                     if pgrep -f demo-firmware > /dev/null; then
                                         echo "Stopping existing firmware instance..."
                                         pkill -SIGTERM -f demo-firmware || true
@@ -150,11 +227,11 @@ spec:
                                     fi
                                 '
 
-                                # Copy artifact to EC2
-                                scp -i \${SSH_KEY} -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com:/tmp/
+                                # 4. Copy artifact to EC2 via SSM Tunnel!
+                                scp -i \${SSH_KEY} -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@\${EC2_INSTANCE_ID}:/tmp/
 
-                                # Extract and deploy
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+                                # 5. Extract and deploy
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@\${EC2_INSTANCE_ID} '
                                     mkdir -p ~/demo-firmware
                                     cd ~/demo-firmware
                                     tar -xzf /tmp/demo-firmware-${env.VERSION}.tar.gz
@@ -171,7 +248,6 @@ spec:
                                     sleep 2
                                     if pgrep -f demo-firmware > /dev/null; then
                                         echo "Firmware is running successfully"
-                                        tail -n 20 firmware.log
                                     else
                                         echo "ERROR: Firmware failed to start"
                                         tail -n 50 firmware.log
