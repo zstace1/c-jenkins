@@ -16,7 +16,7 @@ jobs:
           username: ${{ vars.CBCI_USERNAME }}
           token: ${{ secrets.CBCI_TOKEN }}
           url: ${{ vars.LD_CI_URL }}
-          job-name: "c-jenkins/job/kan-7"
+          job-name: "c-jenkins/job/main"
           test-type: Junit
           test-result-location: test-results.xml
       - id: expose-output
@@ -25,4 +25,4 @@ jobs:
         run: |
           echo "BUILD_NUMBER: ${{ fromJSON(steps.jenkins-run.outputs.jenkins_output).BUILD_NUMBER }}"
           echo "MY_VAR: ${{ fromJSON(steps.jenkins-run.outputs.jenkins_output).MY_VAR }}"
-
+          echo "VERSION: ${{ fromJSON(steps.jenkins-run.outputs.jenkins_output).VERSION }}"
