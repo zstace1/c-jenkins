@@ -16,7 +16,7 @@ jobs:
           username: ${{ vars.CBCI_USERNAME }}
           token: ${{ secrets.CBCI_TOKEN }}
           url: ${{ vars.LD_CI_URL }}
-          job-name: "c-jenkins/job/main"
+          job-name: "c-jenkins/job/kan-7"
           test-type: Junit
           test-result-location: test-results.xml
       - id: expose-output
