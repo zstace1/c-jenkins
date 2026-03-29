@@ -25,5 +25,4 @@ jobs:
         run: |
           echo "BUILD_NUMBER: ${{ fromJSON(steps.jenkins-run.outputs.jenkins_output).BUILD_NUMBER }}"
           echo "MY_VAR: ${{ fromJSON(steps.jenkins-run.outputs.jenkins_output).MY_VAR }}"
-          echo "VERSION: ${{ fromJSON(steps.jenkins-run.outputs.jenkins_output).VERSION }}"
 
