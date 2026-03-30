@@ -187,20 +187,20 @@ spec:
                                 # Ensure ssh is available
                                 apt-get update && apt-get install -y openssh-client
 
-                                echo "=== Testing SSH connectivity ==="
+                                echo "=== Deploying to EC2 ==="
                                 ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'echo "SSH connection successful"'
 
                                 # Stop any running firmware instance
                                 echo "Stopping any existing firmware..."
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'pkill -SIGTERM -f demo-firmware || true; sleep 2; echo "Stop complete"'
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'pkill -SIGTERM -f demo-firmware || true && sleep 2 && echo "Stop complete"'
 
                                 # Copy artifact to EC2
                                 echo "Copying artifact..."
                                 scp -i \${SSH_KEY} -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com:/tmp/
 
                                 # Extract and deploy
-                                echo "Deploying firmware..."
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com "mkdir -p ~/demo-firmware && cd ~/demo-firmware && tar -xzf /tmp/demo-firmware-${env.VERSION}.tar.gz && chmod +x demo-firmware && nohup ./demo-firmware > firmware.log 2>&1 & echo \\\$! > firmware.pid && sleep 2 && if pgrep -f demo-firmware > /dev/null; then echo 'Firmware running (PID: '\$(cat firmware.pid)')' && tail -n 10 firmware.log; else echo 'ERROR: Firmware failed to start' && tail -n 20 firmware.log && exit 1; fi"
+                                echo "Deploying and starting firmware..."
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'mkdir -p ~/demo-firmware && cd ~/demo-firmware && tar -xzf /tmp/demo-firmware-*.tar.gz && chmod +x demo-firmware && nohup ./demo-firmware > firmware.log 2>&1 & echo \$! > firmware.pid && sleep 2 && if pgrep -f demo-firmware > /dev/null; then echo "Firmware started successfully (PID: \$(cat firmware.pid))" && tail -n 10 firmware.log; else echo "ERROR: Firmware failed to start" && tail -n 20 firmware.log && exit 1; fi'
                             """
                         }
                     }
