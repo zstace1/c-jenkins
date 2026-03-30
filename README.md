@@ -1,4 +1,4 @@
-# Demo Firmware Project - TEST7777
+# Demo Firmware Project - TEST77777
 
 A simulated embedded firmware application built with CMake. Demonstrates realistic firmware patterns with hardware abstraction layers, device drivers, and continuous sensor monitoring.
 
