@@ -192,7 +192,7 @@ spec:
 
                                 # Stop any running firmware instance
                                 echo "Stopping any existing firmware..."
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'pkill -SIGTERM -f demo-firmware || true && sleep 2 && echo "Stop complete"'
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'bash -c "pkill -SIGTERM -f demo-firmware; sleep 2; echo Stop complete"' || true
 
                                 # Copy artifact to EC2
                                 echo "Copying artifact..."
@@ -200,7 +200,7 @@ spec:
 
                                 # Extract and deploy
                                 echo "Deploying and starting firmware..."
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'mkdir -p ~/demo-firmware && cd ~/demo-firmware && tar -xzf /tmp/demo-firmware-*.tar.gz && chmod +x demo-firmware && nohup ./demo-firmware > firmware.log 2>&1 & echo \$! > firmware.pid && sleep 2 && if pgrep -f demo-firmware > /dev/null; then echo "Firmware started successfully (PID: \$(cat firmware.pid))" && tail -n 10 firmware.log; else echo "ERROR: Firmware failed to start" && tail -n 20 firmware.log && exit 1; fi'
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'bash -c "mkdir -p ~/demo-firmware && cd ~/demo-firmware && tar -xzf /tmp/demo-firmware-*.tar.gz && chmod +x demo-firmware && nohup ./demo-firmware > firmware.log 2>&1 & echo \$! > firmware.pid && sleep 2 && if pgrep -f demo-firmware >/dev/null; then echo Firmware started successfully; tail -n 10 firmware.log; else echo ERROR: Firmware failed to start; tail -n 20 firmware.log; exit 1; fi"'
                             """
                         }
                     }
