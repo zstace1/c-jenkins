@@ -66,8 +66,16 @@ spec:
                 stage('Lint') {
                     steps {
                         container('build') {
-                            sh 'cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem src/ || true'
-                            sh 'find src/ include/ tests/ -name "*.c" -o -name "*.h" | xargs clang-format --dry-run -Werror || true'
+                            sh 'cppcheck --enable=all --error-exitcode=1 --suppress=missingIncludeSystem src/ 2>&1 | grep -E "(error|warning):" || echo "cppcheck: no issues found"'
+                            sh '''
+                                echo "Checking code formatting..."
+                                UNFORMATTED=$(find src/ include/ tests/ \\( -name "*.c" -o -name "*.h" \\) -exec clang-format --dry-run -Werror {} \\; 2>&1 | wc -l)
+                                if [ "$UNFORMATTED" -eq "0" ]; then
+                                    echo "✓ All files are properly formatted"
+                                else
+                                    echo "⚠ Found $UNFORMATTED formatting issues (run format-code.sh to fix)"
+                                fi
+                            '''
                         }
                     }
                 }
@@ -180,10 +188,10 @@ spec:
                                 apt-get update && apt-get install -y openssh-client
 
                                 echo "=== Testing SSH connectivity ==="
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com 'echo "SSH connection successful"'
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'echo "SSH connection successful"'
 
                                 # Stop any running firmware instance
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com '
                                     if pgrep -f demo-firmware > /dev/null; then
                                         echo "Stopping existing firmware instance..."
                                         pkill -SIGTERM -f demo-firmware || true
@@ -192,10 +200,10 @@ spec:
                                 '
 
                                 # Copy artifact to EC2
-                                scp -i \${SSH_KEY} -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com:/tmp/
+                                scp -i \${SSH_KEY} -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com:/tmp/
 
                                 # Extract and deploy
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com '
                                     mkdir -p ~/demo-firmware
                                     cd ~/demo-firmware
                                     tar -xzf /tmp/demo-firmware-${env.VERSION}.tar.gz

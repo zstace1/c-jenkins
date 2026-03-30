@@ -1,13 +1,10 @@
 #ifndef LED_H
 #define LED_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
-typedef enum {
-    LED_OFF = 0,
-    LED_ON = 1
-} led_state_t;
+typedef enum { LED_OFF = 0, LED_ON = 1 } led_state_t;
 
 int led_init(uint8_t pin);
 int led_set_state(led_state_t state);

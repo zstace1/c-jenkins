@@ -16,9 +16,9 @@
 #define ENABLE_DEBUG_OUTPUT 1
 
 #if ENABLE_DEBUG_OUTPUT
-    #define DEBUG_PRINT(fmt, ...) printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
+#define DEBUG_PRINT(fmt, ...) printf("[DEBUG] " fmt "\n", ##__VA_ARGS__)
 #else
-    #define DEBUG_PRINT(fmt, ...)
+#define DEBUG_PRINT(fmt, ...)
 #endif
 
 #endif
