@@ -210,7 +210,7 @@ spec:
                         registerDeployedArtifactMetadata(
                             allowNoMatchingComponent: false,
                             id: env.ARTIFACT_ID,
-                            label: 'ec2,production-firmware,aws',
+                            labels: 'ec2,production-firmware,aws',
                             targetEnvironment: 'Development',
                             url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz"
                         )
