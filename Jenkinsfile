@@ -200,19 +200,19 @@ spec:
 
                                 # Extract and deploy
                                 echo "Deploying and starting firmware..."
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'bash -c "mkdir -p ~/demo-firmware && cd ~/demo-firmware && tar -xzf /tmp/demo-firmware-*.tar.gz && chmod +x demo-firmware && nohup ./demo-firmware > firmware.log 2>&1 & echo \$! > firmware.pid && sleep 2 && if pgrep -f demo-firmware >/dev/null; then echo Firmware started successfully with PID \$(cat firmware.pid); ls -lh demo-firmware firmware.log 2>/dev/null || true; else echo ERROR: Firmware failed to start; cat firmware.log 2>/dev/null || echo No log file found; exit 1; fi"'
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com "bash -c 'mkdir -p ~/demo-firmware && cd ~/demo-firmware && tar -xzf /tmp/demo-firmware-${env.VERSION}.tar.gz && chmod +x demo-firmware && nohup ./demo-firmware > firmware.log 2>&1 & echo \$! > firmware.pid && sleep 2 && if pgrep -f demo-firmware >/dev/null; then echo Firmware started successfully with PID \$(cat firmware.pid); ls -lh demo-firmware firmware.log 2>/dev/null || true; else echo ERROR: Firmware failed to start; cat firmware.log 2>/dev/null || echo No log file found; exit 1; fi'"
                             """
                         }
 
                         // Register deployment with CloudBees Unify
                         echo "Registering deployment with CloudBees Unify..."
                         echo "ARTIFACT_ID: ${env.ARTIFACT_ID}"
+
                         registerDeployedArtifactMetadata(
-                            allowNoMatchingComponent: false,
-                            id: env.ARTIFACT_ID,
-                            labels: 'ec2,production-firmware,aws',
-                            targetEnvironment: 'Development',
-                            url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz"
+//                            id: env.ARTIFACT_ID,
+                            targetEnvironment: 'Development'
+                            //url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz",
+                            //label: "ec2,aws"
                         )
                         echo "Deployment registered successfully"
                     }
