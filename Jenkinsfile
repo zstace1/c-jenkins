@@ -208,7 +208,9 @@ spec:
                         echo "Registering deployment with CloudBees Unify..."
                         echo "ARTIFACT_ID: ${env.ARTIFACT_ID}"
                         registerDeployedArtifactMetadata(
+                            allowNoMatchingComponent: false,
                             id: env.ARTIFACT_ID,
+                            label: 'ec2,production-firmware,aws',
                             targetEnvironment: 'Development',
                             url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz"
                         )
