@@ -204,6 +204,14 @@ spec:
                             """
                         }
                     }
+
+                    registerDeployedArtifactMetadata(
+                        allowNoMatchingComponent: false,
+                        id: env.ARTIFACT_ID,
+                        label: null,
+                        targetEnvironment: 'Development',
+                        url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz"
+                    )
                 }
             }
         }
