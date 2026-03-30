@@ -209,7 +209,7 @@ spec:
                         echo "ARTIFACT_ID: ${env.ARTIFACT_ID}"
 
                         registerDeployedArtifactMetadata(
-                            //id: env.ARTIFACT_ID,
+                            id: env.ARTIFACT_ID,
                             targetEnvironment: 'Development',
                             url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz"
                             //label: "ec2,aws"
