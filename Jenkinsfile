@@ -200,7 +200,7 @@ spec:
 
                                 # Extract and deploy
                                 echo "Deploying and starting firmware..."
-                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'bash -c "mkdir -p ~/demo-firmware && cd ~/demo-firmware && tar -xzf /tmp/demo-firmware-*.tar.gz && chmod +x demo-firmware && nohup ./demo-firmware > firmware.log 2>&1 & echo \$! > firmware.pid && sleep 2 && if pgrep -f demo-firmware >/dev/null; then echo Firmware started successfully; tail -n 10 firmware.log; else echo ERROR: Firmware failed to start; tail -n 20 firmware.log; exit 1; fi"'
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-3-81-36-238.compute-1.amazonaws.com 'bash -c "mkdir -p ~/demo-firmware && cd ~/demo-firmware && tar -xzf /tmp/demo-firmware-*.tar.gz && chmod +x demo-firmware && nohup ./demo-firmware > firmware.log 2>&1 & echo \$! > firmware.pid && sleep 2 && if pgrep -f demo-firmware >/dev/null; then echo Firmware started successfully with PID \$(cat firmware.pid); ls -lh demo-firmware firmware.log 2>/dev/null || true; else echo ERROR: Firmware failed to start; cat firmware.log 2>/dev/null || echo No log file found; exit 1; fi"'
                             """
                         }
                     }
