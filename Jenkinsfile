@@ -131,60 +131,99 @@ spec:
             }
         }
 
-//        stage('Deploy to EC2') {
-//            when {
-//                branch 'main'
-//            }
-//            steps {
-//                container('build') {
-//                    script {
-//                        withCredentials([sshUserPrivateKey(credentialsId: 'ec2key', keyFileVariable: 'SSH_KEY')]) {
-//                            sh """
-//                                # Ensure ssh is available
-//                                apt-get update && apt-get install -y openssh-client
-//
-//                                # Stop any running firmware instance
-//                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
-//                                    if pgrep -f demo-firmware > /dev/null; then
-//                                        echo "Stopping existing firmware instance..."
-//                                        pkill -SIGTERM -f demo-firmware || true
-//                                        sleep 2
-//                                    fi
-//                                '
-//
-//                                # Copy artifact to EC2
-//                                scp -i \${SSH_KEY} -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com:/tmp/
-//
-//                                # Extract and deploy
-//                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
-//                                    mkdir -p ~/demo-firmware
-//                                    cd ~/demo-firmware
-//                                    tar -xzf /tmp/demo-firmware-${env.VERSION}.tar.gz
-//                                    chmod +x demo-firmware
-//
-//                                    # Start firmware in background
-//                                    nohup ./demo-firmware > firmware.log 2>&1 &
-//                                    echo \$! > firmware.pid
-//
-//                                    echo "Firmware deployed and started (PID: \$(cat firmware.pid))"
-//                                    echo "Version: ${env.VERSION}"
-//
-//                                    # Wait a moment and check if it started successfully
-//                                    sleep 2
-//                                    if pgrep -f demo-firmware > /dev/null; then
-//                                        echo "Firmware is running successfully"
-//                                        tail -n 20 firmware.log
-//                                    else
-//                                        echo "ERROR: Firmware failed to start"
-//                                        tail -n 50 firmware.log
-//                                        exit 1
-//                                    fi
-//                                '
-//                            """
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        stage('Discover Egress IPs') {
+            when {
+                branch 'main'
+            }
+            steps {
+                container('build') {
+                    sh '''
+                        apt-get update && apt-get install -y curl dnsutils
+
+                        echo "=== Pod IP Information ==="
+                        hostname -i || echo "hostname -i not available"
+
+                        echo ""
+                        echo "=== Public Egress IP (what EC2 will see) ==="
+                        curl -s https://checkip.amazonaws.com || echo "Could not reach AWS checkip"
+                        curl -s https://ifconfig.me || echo "Could not reach ifconfig.me"
+                        curl -s https://api.ipify.org || echo "Could not reach ipify"
+
+                        echo ""
+                        echo "=== All Network Interfaces ==="
+                        apt-get install -y net-tools
+                        ifconfig || ip addr show
+
+                        echo ""
+                        echo "=== Route Information ==="
+                        ip route show || route -n
+
+                        echo ""
+                        echo "=== Node Information (if available) ==="
+                        echo "NODE_NAME: ${NODE_NAME:-not set}"
+                        echo "POD_NAME: ${POD_NAME:-not set}"
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to EC2') {
+            when {
+                branch 'main'
+            }
+            steps {
+                container('build') {
+                    script {
+                        withCredentials([sshUserPrivateKey(credentialsId: 'ec2key', keyFileVariable: 'SSH_KEY')]) {
+                            sh """
+                                # Ensure ssh is available
+                                apt-get update && apt-get install -y openssh-client
+
+                                echo "=== Testing SSH connectivity ==="
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com 'echo "SSH connection successful"'
+
+                                # Stop any running firmware instance
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+                                    if pgrep -f demo-firmware > /dev/null; then
+                                        echo "Stopping existing firmware instance..."
+                                        pkill -SIGTERM -f demo-firmware || true
+                                        sleep 2
+                                    fi
+                                '
+
+                                # Copy artifact to EC2
+                                scp -i \${SSH_KEY} -o StrictHostKeyChecking=no demo-firmware-${env.VERSION}.tar.gz ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com:/tmp/
+
+                                # Extract and deploy
+                                ssh -i \${SSH_KEY} -o StrictHostKeyChecking=no ec2-user@ec2-54-198-197-52.compute-1.amazonaws.com '
+                                    mkdir -p ~/demo-firmware
+                                    cd ~/demo-firmware
+                                    tar -xzf /tmp/demo-firmware-${env.VERSION}.tar.gz
+                                    chmod +x demo-firmware
+
+                                    # Start firmware in background
+                                    nohup ./demo-firmware > firmware.log 2>&1 &
+                                    echo \$! > firmware.pid
+
+                                    echo "Firmware deployed and started (PID: \$(cat firmware.pid))"
+                                    echo "Version: ${env.VERSION}"
+
+                                    # Wait a moment and check if it started successfully
+                                    sleep 2
+                                    if pgrep -f demo-firmware > /dev/null; then
+                                        echo "Firmware is running successfully"
+                                        tail -n 20 firmware.log
+                                    else
+                                        echo "ERROR: Firmware failed to start"
+                                        tail -n 50 firmware.log
+                                        exit 1
+                                    fi
+                                '
+                            """
+                        }
+                    }
+                }
+            }
+        }
     }
 }
