@@ -16,7 +16,7 @@ make release  # Release build
 make test
 ```
 
-## Running
+## Running 7
 
 ```bash
 make run
