@@ -210,9 +210,9 @@ spec:
 
                         registerDeployedArtifactMetadata(
                             id: env.ARTIFACT_ID,
-                            targetEnvironment: 'Development',
-                            url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz"
-                            //label: "ec2,aws"
+                            targetEnvironment: 'Production',
+                            url: "${env.BUILD_URL}artifact/demo-firmware-${env.VERSION}.tar.gz",
+                            label: "ec2,aws"
                         )
                         echo "Deployment registered successfully"
                     }
