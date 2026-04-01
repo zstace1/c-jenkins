@@ -10,13 +10,13 @@ make release  # Release build
 # Nonsense comment for a test commit
 ```
 
-## Testing
+## Testing 7
 
 ```bash
 make test
 ```
 
-## Running
+## Running 7
 
 ```bash
 make run
